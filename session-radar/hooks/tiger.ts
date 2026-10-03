@@ -7,6 +7,11 @@ export const PALETTE: Record<string, string> = {
   W: '#f5efe2', // 白色肚子、嘴邊
   E: '#111111', // 眼睛
   N: '#ff8fa3', // 鼻子
+  G: '#2e7d32', // 樹冠
+  L: '#43a047', // 樹冠亮面
+  B: '#6d4c41', // 樹幹
+  g: '#7cc242', // 草
+  H: '#4e9a2f', // 草的暗面
 }
 
 const BODY = [
@@ -165,33 +170,41 @@ export const sized = (s: Sprite, factor: number): Sprite =>
 
 export type Run = { text: string; fg?: string; bg?: string }
 
-/** 每兩列像素合成一列半格字元（▀ ▄），相同顏色的相鄰格併成一段。 */
-export const toRuns = (s: Sprite): Run[][] => {
+/** 每兩列像素合成一列半格字元（▀ ▄），每格一個 Run。 */
+export const toCells = (s: Sprite): Run[][] => {
   const lines: Run[][] = []
   for (let y = 0; y < s.length; y += 2) {
     const top = s[y] ?? ''
     const bottom = s[y + 1] ?? ''
+    lines.push(
+      [...top].map((px, x) => {
+        const t = PALETTE[px]
+        const b = PALETTE[bottom[x] ?? '.']
+        if (t === undefined && b === undefined) return { text: ' ' }
+        if (t === undefined) return { text: '▄', fg: b }
+        return b === undefined ? { text: '▀', fg: t } : { text: '▀', fg: t, bg: b }
+      }),
+    )
+  }
+  return lines
+}
+
+/** 相同顏色、相同字元的相鄰格併成一段。 */
+export const joinCells = (lines: readonly (readonly Run[])[]): Run[][] =>
+  lines.map(cells => {
     const runs: Run[] = []
-    for (let x = 0; x < top.length; x++) {
-      const t = PALETTE[top[x] ?? '.']
-      const b = PALETTE[bottom[x] ?? '.']
-      const cell: Run =
-        t === undefined && b === undefined
-          ? { text: ' ' }
-          : t === undefined
-            ? { text: '▄', fg: b }
-            : { text: '▀', fg: t, bg: b }
+    for (const cell of cells) {
       const last = runs[runs.length - 1]
-      if (last !== undefined && last.fg === cell.fg && last.bg === cell.bg && (last.text[0] === cell.text)) {
+      if (last !== undefined && last.fg === cell.fg && last.bg === cell.bg && last.text[0] === cell.text) {
         last.text += cell.text
       } else {
         runs.push({ ...cell })
       }
     }
-    lines.push(runs)
-  }
-  return lines
-}
+    return runs
+  })
+
+export const toRuns = (s: Sprite): Run[][] => joinCells(toCells(s))
 
 export type Walker = { x: number; facing: 1 | -1 }
 
