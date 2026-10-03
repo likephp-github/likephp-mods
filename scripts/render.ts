@@ -53,10 +53,10 @@ export type Mod = {
 }
 
 /**
- * 載入 mod 的模組。mod 的 import 不寫副檔名（Claude Code 的寫法），
- * Node 找不到時改試 .ts。
+ * mod 的 import 不寫副檔名（Claude Code 的寫法），Node 找不到時改試 .ts。
+ * 要在動態 import mod 模組之前呼叫；靜態 import 在 hook 註冊前就已解析完。
  */
-export const loadMod = async (): Promise<Mod> => {
+export const allowExtensionlessImports = (): void => {
   registerHooks({
     resolve(specifier, context, next) {
       try {
@@ -67,6 +67,11 @@ export const loadMod = async (): Promise<Mod> => {
       }
     },
   })
+}
+
+/** 載入 mod 的模組。 */
+export const loadMod = async (): Promise<Mod> => {
+  allowExtensionlessImports()
   const frame = await import('../session-radar/hooks/frame.ts')
   const sprite = await import('../session-radar/hooks/sprite.ts')
   const theme = await import('../session-radar/hooks/theme.ts')

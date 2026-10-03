@@ -169,3 +169,17 @@ describe('puma 動畫裡看得到的東西', () => {
     assert.match(drawnText(idle), /nom/)
   })
 })
+
+describe('不帶副檔名的 import', () => {
+  test('註冊後，獨立的 node 行程也能載入 import 不帶副檔名的 mod 模組（gen-puma.ts 就是這樣用）', async () => {
+    const { execFileSync } = await import('node:child_process')
+    const code = [
+      "const { allowExtensionlessImports } = await import('./scripts/render.ts')",
+      'allowExtensionlessImports()',
+      "const { sized } = await import('./session-radar/hooks/sprite.ts')",
+      "console.log(typeof sized)",
+    ].join('\n')
+    const out = execFileSync(process.execPath, ['--input-type=module', '-e', code], { encoding: 'utf8' })
+    assert.equal(out.trim(), 'function')
+  })
+})
