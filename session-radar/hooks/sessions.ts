@@ -65,13 +65,20 @@ export const peerForKey = (peers: readonly Peer[], selfId: string, key: string):
   return peers.find(p => keys[p.sessionId] === key)
 }
 
-export type SessionsCommand = { kind: 'toggle' } | { kind: 'jump'; key: string } | { kind: 'usage' }
+export type SessionsCommand =
+  | { kind: 'toggle' }
+  | { kind: 'jump'; key: string }
+  | { kind: 'theme'; name?: string }
+  | { kind: 'usage' }
 
-/** /sessions 的參數：空的開關面板，1～9 跳到該編號的 session。 */
+/** /sessions 的參數：空的開關面板，1～9 跳到該編號的 session，theme [名稱] 切換主題（名稱由呼叫端檢查）。 */
 export const parseSessionsArgs = (args: string): SessionsCommand => {
   const a = args.trim()
   if (a === '') return { kind: 'toggle' }
-  return /^[1-9]$/.test(a) ? { kind: 'jump', key: a } : { kind: 'usage' }
+  if (/^[1-9]$/.test(a)) return { kind: 'jump', key: a }
+  const theme = /^theme(?:\s+(\S+))?$/.exec(a)
+  if (theme === null) return { kind: 'usage' }
+  return theme[1] === undefined ? { kind: 'theme' } : { kind: 'theme', name: theme[1] }
 }
 
 export const ago = (since: number, now: number): string => {

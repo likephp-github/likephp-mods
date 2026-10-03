@@ -24,6 +24,13 @@ export type Tiger = {
 
 declare module 'claude-code' {
   interface PluginState {
-    'session-radar': { peers: Peer[]; selfId: string; checkedAt: number; tiger: Tiger }
+    'session-radar': {
+      peers: Peer[]
+      selfId: string
+      checkedAt: number
+      tiger: Tiger
+      /** 面板底部目前的主題名稱；啟動時從 ~/.claude/session-radar.json 讀，/sessions theme 切換。 */
+      theme: string
+    }
   }
 }
