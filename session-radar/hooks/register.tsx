@@ -3,7 +3,8 @@ import type { EngineInterface, Register } from 'claude-code'
 
 import type { Peer, Tiger } from '../types'
 import { ago, look, parsePeer, sortPeers } from './sessions'
-import { FLIGHT_ROOM, PAW_ROW, PLAY_STEPS, SLEEP, WALK, sleepPose, factorFor, flight, mirror, modeFor, sized, snore, spriteWidth, step, toRuns } from './tiger'
+import { composeScene, fitsTrees, stamp } from './scene'
+import { FLIGHT_ROOM, PAW_ROW, PLAY_STEPS, SLEEP, WALK, sleepPose, factorFor, flight, joinCells, mirror, modeFor, sized, snore, spriteWidth, step, toCells } from './tiger'
 
 const PANE = 'session-radar'
 const TITLE = 'Claude Sessions'
@@ -120,8 +121,6 @@ export const register: Register = on => {
     const columns = e.props.bodyColumns
     const factor = factorFor(cat.percent, columns, TIGER_WIDTH)
     const mode = modeFor(cat.isWorking, cat.idleSince, await $.clock.now())
-    const pawLine = Math.floor(Math.floor(PAW_ROW * factor) / 2)
-    const fly = flight(cat.frame, pawLine)
     const base =
       mode === 'walk' ? WALK[cat.frame % WALK.length] : mode === 'play' ? PLAY_STEPS[cat.frame % PLAY_STEPS.length] : sleepPose(cat.frame)
     const pose = sized(base ?? SLEEP, factor)
@@ -135,21 +134,27 @@ export const register: Register = on => {
         : cat.facing === 1
           ? Math.max(0, Math.min(cat.x, columns - width - FLIGHT_ROOM))
           : Math.min(room, Math.max(cat.x, FLIGHT_ROOM))
-    const lines = toRuns(cat.facing === 1 ? pose : mirror(pose))
+    // 老虎疊在樹林前、站在草地上；背景位移跟著老虎實際畫出的 x
+    const listRows = 1 + Math.max(1, list.length)
+    const withTrees = fitsTrees(e.props.scroll.bodyRows, listRows, pose.length)
+    const scene = composeScene({ pose: cat.facing === 1 ? pose : mirror(pose), x, columns, withTrees })
+    const tigerLine = Math.floor(scene.top / 2)
+    const pawLine = Math.floor((scene.top + Math.floor(PAW_ROW * factor)) / 2)
+    const fly = flight(cat.frame, pawLine - tigerLine)
     // 蝴蝶的欄位：老虎面向哪邊，就在那一側的身體前緣外
     const flyAt = cat.facing === 1 ? x + width + fly.col : x - fly.glyph.length - fly.col
-    const butterflyOn = (row: number) => mode === 'play' && fly.row === row
-    // 頭頂那一行：睡覺時打呼，抓蝴蝶時可能是蝴蝶，走路時空白
-    const above =
+    const zzz = snore(cat.frame)
+    const zzzAt = Math.min(Math.max(0, x + width - zzz.length), columns - zzz.length)
+    // 頭頂那一行：睡覺時打呼，抓蝴蝶時蝴蝶在頭頂或掌邊，符號直接蓋在背景上
+    const cells =
       mode === 'sleep'
-        ? { text: snore(cat.frame), at: x + width - snore(cat.frame).length, color: 'cyan' }
-        : butterflyOn(-1)
-          ? { text: fly.glyph, at: flyAt, color: 'magenta' }
-          : { text: '', at: 0, color: 'cyan' }
-    // 把老虎推到面板最底：可見列數扣掉清單與老虎本身佔的列數，剩下的補空行
-    const listRows = 1 + Math.max(1, list.length)
-    const tigerRows = 1 + lines.length
-    const gap = Math.max(1, e.props.scroll.bodyRows - listRows - tigerRows)
+        ? stamp(toCells(scene.sprite), scene.sprite, tigerLine - 1, zzzAt, zzz, 'cyan')
+        : mode === 'play'
+          ? stamp(toCells(scene.sprite), scene.sprite, tigerLine + fly.row, flyAt, fly.glyph, fly.isHit ? 'yellow' : 'magenta')
+          : toCells(scene.sprite)
+    const lines = joinCells(cells)
+    // 把場景推到面板最底：可見列數扣掉清單與場景佔的列數，剩下的補空行
+    const gap = Math.max(1, e.props.scroll.bodyRows - listRows - lines.length)
 
     return (
       <Box flexDirection="column">
@@ -178,32 +183,15 @@ export const register: Register = on => {
         {Array.from({ length: gap }, (_, i) => (
           <Text key={`gap${i}`}> </Text>
         ))}
-        <Text color={above.color} wrap="truncate-end">
-          {' '.repeat(Math.min(Math.max(0, above.at), Math.max(0, columns - above.text.length)))}
-          {above.text || ' '}
-        </Text>
-        {lines.map((runs, row) => {
-          const isHere = butterflyOn(row)
-          const isBefore = isHere && flyAt + fly.glyph.length <= x
-          const isAfter = isHere && flyAt >= x + width
-          const lead = isBefore ? Math.max(0, flyAt) : x
-          const glyph = <Text color={fly.isHit ? 'yellow' : 'magenta'}>{fly.glyph}</Text>
-
-          return (
-            <Text key={`t${row}`} wrap="truncate-end">
-              {' '.repeat(lead)}
-              {isBefore && glyph}
-              {isBefore && ' '.repeat(Math.max(0, x - lead - fly.glyph.length))}
-              {runs.map((r, i) => (
-                <Text key={`r${row}-${i}`} color={r.fg} backgroundColor={r.bg}>
-                  {r.text}
-                </Text>
-              ))}
-              {isAfter && ' '.repeat(flyAt - x - width)}
-              {isAfter && glyph}
-            </Text>
-          )
-        })}
+        {lines.map((runs, row) => (
+          <Text key={`t${row}`} wrap="truncate-end">
+            {runs.map((r, i) => (
+              <Text key={`r${row}-${i}`} color={r.fg} backgroundColor={r.bg}>
+                {r.text}
+              </Text>
+            ))}
+          </Text>
+        ))}
       </Box>
     )
   })
