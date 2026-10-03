@@ -1,6 +1,6 @@
 {
   "name": "token-weather",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "在輸入框上方顯示 context window 用量的天氣預報",
   "types": "./types/index.d.ts",
   "author": {

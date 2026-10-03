@@ -121,11 +121,7 @@ export const register: Register = on => {
     const meta = await read($, info)
     const t = await read($, now)
     const last = list[list.length - 1]
-
-    if (last === undefined && meta === null) {
-      return next(e)
-    }
-
+    // 還沒有任何資料（例如剛重開）時也畫等待提示，不然看起來像 mod 沒載入
     const { Box, Text } = $.ui.resolve(e)
     const prev = list[list.length - 2]
     const delta = last !== undefined && prev !== undefined ? last.tokens - prev.tokens : undefined
