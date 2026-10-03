@@ -7,9 +7,13 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
 import { DANGO } from '../session-radar/hooks/dango.ts'
-import { sized } from '../session-radar/hooks/sprite.ts'
 import { decodePng, encodePng } from './png.ts'
 import { OUTPUT, convert, previewImage, sourceOf } from './puma.ts'
+import { allowExtensionlessImports } from './render.ts'
+
+allowExtensionlessImports()
+// sprite.ts 以不帶副檔名的方式 import text，要等 hook 註冊後才能載入
+const { sized } = await import('../session-radar/hooks/sprite.ts')
 
 /** 預覽圖每個像素幾 px 見方。 */
 const PREVIEW_PX = 4
