@@ -1,4 +1,5 @@
 /** 像素圖的共用工具：縮放、翻轉、轉成半格字元、在畫面上寫字。與主題無關。 */
+import { charWidth } from './text'
 
 /** 像素圖：每個字元是一個像素，'.' 為透明；顏色由主題的調色盤決定。 */
 export type Sprite = readonly string[]
@@ -83,7 +84,10 @@ export const joinCells = (lines: readonly (readonly Run[])[]): Run[][] =>
 
 export const toRuns = (s: Sprite, palette: Record<string, string>): Run[][] => joinCells(toCells(s, palette))
 
-/** 在第 line 行第 at 欄寫字；底色用該格下半像素的顏色，空白不蓋背景。 */
+/**
+ * 在第 line 行第 at 欄寫字；底色用該格下半像素的顏色，空白不蓋背景。
+ * 寬字元（中文）佔兩格：字放在第一格，第二格清成空字串；放不下整個字就不畫。
+ */
 export const stamp = (
   cells: readonly (readonly Run[])[],
   s: Sprite,
@@ -96,12 +100,17 @@ export const stamp = (
   cells.map((row, l) => {
     if (l !== line) return [...row]
     const out = [...row]
-    ;[...text].forEach((ch, i) => {
-      const col = at + i
-      if (ch === ' ' || col < 0 || col >= out.length) return
-      const bg = palette[s[line * 2 + 1]?.[col] ?? '.']
-      out[col] = bg === undefined ? { text: ch, fg: color } : { text: ch, fg: color, bg }
-    })
+    let col = at
+    for (const ch of text) {
+      const width = charWidth(ch)
+      const fits = col >= 0 && col + width <= out.length
+      if (ch !== ' ' && fits) {
+        const bg = palette[s[line * 2 + 1]?.[col] ?? '.']
+        out[col] = bg === undefined ? { text: ch, fg: color } : { text: ch, fg: color, bg }
+        if (width === 2) out[col + 1] = { text: '' }
+      }
+      col += width
+    }
     return out
   })
 

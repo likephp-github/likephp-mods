@@ -102,7 +102,8 @@ export const register: Register = on => {
   on('turn.complete', async ($, e, next) => {
     if (e.agentId === undefined) {
       const t = await $.clock.now()
-      await update($, tiger, cat => ({ ...cat, isWorking: false, idleSince: t }))
+      // 每次進入 resting 抽一次亂數，主題用它挑這段期間不變的內容（puma 的名言）
+      await update($, tiger, cat => ({ ...cat, isWorking: false, idleSince: t, seed: Math.random() }))
     }
 
     return next(e)
@@ -166,6 +167,7 @@ export const register: Register = on => {
       factor,
       columns,
       rows: e.props.scroll.bodyRows - listRows,
+      seed: cat.seed,
     })
     room = frame.room
     stride = frame.stride

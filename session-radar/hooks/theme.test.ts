@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'claude-code/testing'
 
 import { DEFAULT_THEME, NAP_AFTER_MS, stateFor, themeFor } from './theme'
+import { puma } from './puma'
 import { tiger } from './tiger'
 
 describe('狀態', () => {
@@ -21,6 +22,9 @@ describe('狀態', () => {
 describe('主題登錄表', () => {
   test('以名稱取得主題', async () => {
     expect(themeFor('tiger')).toBe(tiger)
+  })
+  test('登錄表裡有 puma', async () => {
+    expect(themeFor('puma')).toBe(puma)
   })
   test('預設主題是 tiger', async () => {
     expect(themeFor(DEFAULT_THEME).name).toBe('tiger')

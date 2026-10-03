@@ -20,6 +20,8 @@ export type FrameInput = {
   columns: number
   /** 場景最多能佔幾行文字；放不下完整背景時由主題決定怎麼省略。 */
   rows: number
+  /** 進入 resting 時抽的亂數（0 ≤ seed < 1），主題用來挑這段 resting 期間不變的內容（例如名言）。 */
+  seed?: number
 }
 
 export type Frame = {
@@ -34,7 +36,9 @@ export type Frame = {
   stride: number
 }
 
-export const paneFrame = (o: FrameInput): Frame => {
+export const paneFrame = (input: FrameInput): Frame => {
+  const fitted = input.theme.fit?.(input.factor) ?? input.factor
+  const o = fitted === input.factor ? input : { ...input, factor: fitted }
   const act = o.theme.acts[o.state]
   const pose = sized(act.pose(o.frame), o.factor)
   const width = spriteWidth(pose)

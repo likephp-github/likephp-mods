@@ -18,6 +18,8 @@ export type Tiger = {
   frame: number
   x: number
   facing: 1 | -1
+  /** 最近一次進入 resting 時抽的亂數（0 ≤ seed < 1），主題用來挑這段期間不變的內容（例如名言）。 */
+  seed?: number
 }
 
 declare module 'claude-code' {
