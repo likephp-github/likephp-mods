@@ -11,7 +11,7 @@
     {
       "name": "session-radar",
       "source": "./session-radar",
-      "description": "側邊面板列出本機所有 Claude Code session 的狀態，附一隻隨 context 長大的 8-bit 老虎"
+      "description": "側邊面板列出本機所有 Claude Code session 的狀態，底部有隨 context 長大的 8-bit 角色，可用 /sessions theme 切換小老虎（tiger）或綠雲與愛心（puma）"
     }
   ]
 }
