@@ -2,7 +2,9 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { Peer, Tiger } from '../types'
-import { ago, look, parsePeer, sortPeers } from './sessions'
+import { jumpTo, messageFor } from './jump'
+import type { Run } from './jump'
+import { ago, hotkeys, look, parsePeer, parseSessionsArgs, peerForKey, sortPeers } from './sessions'
 import { composeScene, fitsTrees, stamp } from './scene'
 import { FLIGHT_ROOM, PAW_ROW, PLAY_STEPS, SLEEP, WALK, sleepPose, factorFor, flight, joinCells, mirror, modeFor, sized, snore, spriteWidth, step, toCells } from './tiger'
 
@@ -22,6 +24,21 @@ const tiger = atom({ plugin: 'session-radar', key: 'tiger' } as const, {
   x: 0,
   facing: 1,
 } as Tiger)
+
+/** 跳到 peer 所在的終端機；失敗時用 toast 告訴使用者下一步，細節寫到 debug log。 */
+/** 跳到 peer 所在的終端機；回傳給使用者看的提示（成功時 undefined），錯誤細節寫到 debug log。 */
+async function jump($: EngineInterface, peer: Peer, inTmux: boolean): Promise<string | undefined> {
+  const run: Run = argv => $.process.run(argv)
+  const outcome = await jumpTo(peer.pid, run, { inTmux })
+  if (outcome.kind === 'error') $.ui.log(`session-radar 切換到 ${peer.name} 失敗：${outcome.detail}`, { to: 'debug' })
+  return messageFor(outcome)
+}
+
+/** 按下面板上的名稱：失敗時用 toast 提示。 */
+async function jumpFromPane($: EngineInterface, peer: Peer, inTmux: boolean) {
+  const message = await jump($, peer, inTmux)
+  if (message !== undefined) $.ui.toast(message)
+}
 
 async function scan($: EngineInterface, home: string) {
   const dir = `${home}/.claude/sessions`
@@ -53,16 +70,18 @@ async function tick($: EngineInterface, room: number, stride: number) {
 
 export const register: Register = on => {
   let home = ''
+  let inTmux = false
   let room = 0
   let stride = 1
 
   on('session.start', async ($, e, next) => {
     home = (await $.env.get('HOME')) ?? ''
+    inTmux = ((await $.env.get('TMUX')) ?? '') !== ''
     const id = await $.session.id()
     await update($, selfId, () => id)
     await $.command.register({
       name: 'sessions',
-      description: '開關側邊面板：本機所有 Claude session 的狀態',
+      description: '開關側邊面板：本機所有 Claude session 的狀態；/sessions 1～9 跳到該編號的 session',
     })
     await scan($, home)
     $.clock.every(POLL_MS, () => scan($, home))
@@ -96,7 +115,20 @@ export const register: Register = on => {
     return next(e)
   })
 
-  on('command.run', { command: 'sessions' }, async $ => {
+  on('command.run', { command: 'sessions' }, async ($, e) => {
+    const cmd = parseSessionsArgs(e.args)
+
+    if (cmd.kind === 'usage') {
+      return { text: '用法：/sessions 開關面板；/sessions 1～9 跳到面板上該編號的 session。' }
+    }
+
+    if (cmd.kind === 'jump') {
+      await scan($, home)
+      const peer = peerForKey(await read($, peers), await read($, selfId), cmd.key)
+      if (peer === undefined) return { text: `沒有編號 ${cmd.key} 的 session。` }
+      return { text: (await jump($, peer, inTmux)) ?? `已切換到 ${peer.name}。` }
+    }
+
     const isOpen = (await $.ui.panes()).some(pane => pane.id === PANE)
 
     if (isOpen) {
@@ -112,11 +144,12 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
-    const { Box, Text } = $.ui.resolve(e)
+    const { Box, Button, Text } = $.ui.resolve(e)
     const list = await read($, peers)
     const me = await read($, selfId)
     const now = await read($, checkedAt)
     const busy = list.filter(p => p.status === 'busy').length
+    const keys = hotkeys(list, me)
     const cat = await read($, tiger)
     const columns = e.props.bodyColumns
     const factor = factorFor(cat.percent, columns, TIGER_WIDTH)
@@ -165,19 +198,30 @@ export const register: Register = on => {
         {list.map(peer => {
           const l = look(peer.status)
           const isMe = peer.sessionId === me
+          const key = keys[peer.sessionId]
+          const detail = (
+            <Text dimColor wrap="truncate-end">
+              {' '}
+              {l.label} {ago(peer.since, now)}
+              {peer.kind === 'bg' ? ' 背景' : ''}
+            </Text>
+          )
 
-          return (
+          // 本視窗那一行只是看的；其他 session 的名稱是按鈕，按了跳過去
+          return isMe ? (
             <Text key={peer.sessionId} wrap="truncate-end">
               <Text color={l.color}>{l.icon}</Text>{' '}
-              <Text bold={isMe} color={isMe ? 'blue' : undefined}>
+              <Text bold color="blue">
                 {peer.name}
               </Text>
-              <Text dimColor>
-                {' '}
-                {l.label} {ago(peer.since, now)}
-                {peer.kind === 'bg' ? ' 背景' : ''}
-              </Text>
+              {detail}
             </Text>
+          ) : (
+            <Box key={peer.sessionId} flexDirection="row">
+              <Text color={l.color}>{l.icon} </Text>
+              <Button key={`jump-${peer.sessionId}`} plain hotkey={key} label={peer.name} onPress={() => jumpFromPane($, peer, inTmux)} />
+              {detail}
+            </Box>
           )
         })}
         {Array.from({ length: gap }, (_, i) => (
