@@ -9,6 +9,7 @@ import {
   forecast,
   limitLabel,
   loadColor,
+  modelLabel,
   shortTokens,
   signedTokens,
   sparkline,
@@ -153,7 +154,7 @@ export const register: Register = on => {
         {meta !== null && (
           <Box>
             <Text wrap="truncate-end">
-              <Text color="cyan">[{meta.model}]</Text>
+              <Text color="cyan">[{modelLabel(meta.model)}]</Text>
               <Text dimColor> │ </Text>
               <Text>{meta.project}</Text>
               {meta.branch !== null && <Text color="magenta"> ({meta.branch})</Text>}

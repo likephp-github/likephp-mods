@@ -32,11 +32,14 @@ describe('體型', () => {
   test('50% 是滿版的一半', async () => {
     expect(factorFor(50, 40, 18)).toBe(1)
   })
-  test('用量很低時不小於 0.5 倍', async () => {
-    expect(factorFor(5, 40, 18)).toBe(0.5)
+  test('用量很低時不小於 1 倍', async () => {
+    expect(factorFor(5, 40, 18)).toBe(1)
   })
   test('還沒有用量時是最小值', async () => {
-    expect(factorFor(undefined, 40, 18)).toBe(0.5)
+    expect(factorFor(undefined, 40, 18)).toBe(1)
+  })
+  test('滿版 3 倍時 50% 是 1.5 倍', async () => {
+    expect(factorFor(50, 60, 18)).toBe(1.5)
   })
   test('縮成一半寬高都減半', async () => {
     const small = sized(WALK[0] ?? [], 0.5)

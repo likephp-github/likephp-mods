@@ -51,3 +51,12 @@ export const branchFromHead = (head: string): string | null => {
   if (ref) return ref[1] ?? null
   return /^[0-9a-f]{7,}$/.test(text) ? text.slice(0, 7) : null
 }
+
+/** 把模型 ID 轉成好讀的名稱：claude-opus-5-5 → Opus 5.5；認不得就原樣顯示。 */
+export const modelLabel = (id: string): string => {
+  const m = /^claude-([a-z]+)-(\d+)-(\d+)(?!\d)/.exec(id)
+  if (m === null) return id
+  const [, family = '', major, minor] = m
+  const name = family.charAt(0).toUpperCase() + family.slice(1)
+  return `${name} ${major}.${minor}${id.includes('[1m]') ? ' (1M)' : ''}`
+}

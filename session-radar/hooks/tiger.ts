@@ -143,12 +143,12 @@ export const resize = (s: Sprite, width: number, height: number): Sprite => {
   })
 }
 
-export const MIN_FACTOR = 0.5
+export const MIN_FACTOR = 1
 export const MAX_FACTOR = 3
 
 /**
  * 上下文 100% 時的倍數：最多 3 倍，且不超過面板能容納的整數倍。
- * 其他用量依比例縮小，最小 0.5 倍；還沒有用量時用最小值。
+ * 其他用量依比例縮小，最小 1 倍（再小就看不出是老虎）；還沒有用量時用最小值。
  */
 export const factorFor = (percent: number | undefined, columns: number, width: number): number => {
   const full = Math.max(1, Math.min(MAX_FACTOR, Math.floor(columns / width)))

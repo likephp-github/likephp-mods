@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { bar, branchFromHead, duration, forecast, limitLabel, loadColor, shortTokens, signedTokens, sparkline } from './forecast'
+import { bar, branchFromHead, duration, forecast, limitLabel, loadColor, modelLabel, shortTokens, signedTokens, sparkline } from './forecast'
 
 describe('forecast', () => {
   test('低於 25% 是晴天', async () => {
@@ -53,5 +53,20 @@ describe('HUD 資訊', () => {
   })
   test('detached HEAD 顯示短 hash', async () => {
     expect(branchFromHead('0123456789abcdef\n')).toBe('0123456')
+  })
+})
+
+describe('模型名稱', () => {
+  test('轉成好讀的名稱', async () => {
+    expect(modelLabel('claude-opus-5-5')).toBe('Opus 5.5')
+  })
+  test('忽略日期後綴', async () => {
+    expect(modelLabel('claude-haiku-4-5-20251001')).toBe('Haiku 4.5')
+  })
+  test('1M context 標註出來', async () => {
+    expect(modelLabel('claude-opus-5-5[1m]')).toBe('Opus 5.5 (1M)')
+  })
+  test('認不得的名稱原樣顯示', async () => {
+    expect(modelLabel('gpt-x')).toBe('gpt-x')
   })
 })
