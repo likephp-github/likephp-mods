@@ -118,4 +118,14 @@ describe('文字符號', () => {
     const s = ['..', '..']
     expect(stamp(toCells(s, PALETTE), s, 0, 1, 'ʚɞ', 'magenta', PALETTE)[0]?.length).toBe(2)
   })
+  test('中文字佔兩格：字在第一格、第二格清空，下一個字往後兩格', async () => {
+    const s = ['.....', '.....']
+    const [line] = stamp(toCells(s, PALETTE), s, 0, 0, '我們a', 'white', PALETTE)
+    expect(line?.map(c => c.text)).toEqual(['我', '', '們', '', 'a'])
+  })
+  test('放不下整個寬字元時不畫半個', async () => {
+    const s = ['...', '...']
+    const [line] = stamp(toCells(s, PALETTE), s, 0, 2, '我', 'white', PALETTE)
+    expect(line?.map(c => c.text)).toEqual([' ', ' ', ' '])
+  })
 })

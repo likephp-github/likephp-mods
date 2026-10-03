@@ -4,6 +4,7 @@
  */
 import type { FrameInput, Mark } from './frame'
 import type { Sprite } from './sprite'
+import { puma } from './puma'
 import { tiger } from './tiger'
 
 /** session 的活動程度：工作中、回覆結束後 30 秒內、閒置超過 30 秒。 */
@@ -48,9 +49,11 @@ export type Theme = {
   width: number
   /** 體型的最小倍數。 */
   minFactor: number
+  /** 依面板算出的倍數再由主題微調（例如保證縮小後還看得到眼睛）；沒有時照用。 */
+  fit?: (factor: number) => number
 }
 
-export const THEMES = { tiger } satisfies Record<string, Theme>
+export const THEMES = { tiger, puma } satisfies Record<string, Theme>
 
 export type ThemeName = keyof typeof THEMES
 
