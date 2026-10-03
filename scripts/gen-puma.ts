@@ -7,7 +7,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
 import { DANGO } from '../session-radar/hooks/dango.ts'
-import { sized } from '../session-radar/hooks/tiger.ts'
+import { sized } from '../session-radar/hooks/sprite.ts'
 import { decodePng, encodePng } from './png.ts'
 import { OUTPUT, convert, previewImage, sourceOf } from './puma.ts'
 
