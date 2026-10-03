@@ -143,18 +143,20 @@ export const resize = (s: Sprite, width: number, height: number): Sprite => {
   })
 }
 
-export const MIN_FACTOR = 1
+export const MIN_FACTOR = 0.5
 export const MAX_FACTOR = 3
+/** 整體縮小比例：依用量算出的大小再乘上這個值。 */
+export const SIZE_SCALE = 0.5
 
 /**
- * 上下文 100% 時的倍數：最多 3 倍，且不超過面板能容納的整數倍。
- * 其他用量依比例縮小，最小 1 倍（再小就看不出是老虎）；還沒有用量時用最小值。
+ * 上下文 100% 時的倍數：面板能容納的整數倍（最多 3 倍）再乘上 SIZE_SCALE。
+ * 其他用量依比例縮小，最小 0.5 倍；還沒有用量時用最小值。
  */
 export const factorFor = (percent: number | undefined, columns: number, width: number): number => {
   const full = Math.max(1, Math.min(MAX_FACTOR, Math.floor(columns / width)))
   if (percent === undefined) return MIN_FACTOR
   const ratio = Math.min(100, Math.max(0, percent)) / 100
-  return Math.max(MIN_FACTOR, full * ratio)
+  return Math.max(MIN_FACTOR, full * ratio * SIZE_SCALE)
 }
 
 /** 依倍數縮放姿勢，寬高至少 1 像素。 */
