@@ -21,8 +21,8 @@ const frameOf = (sprite: string[], marks: { line: number; col: number; text: str
 describe('柵格化', () => {
   test('每個像素展開成 8×8 色塊', () => {
     const palette = paletteOf(mod)
-    const { width, height, indices } = rasterize(frameOf(['O.']), mod.PALETTE, palette)
-    const orange = palette.indexOf(mod.PALETTE.O!)
+    const { width, height, indices } = rasterize(frameOf(['O.']), mod.theme.palette, palette)
+    const orange = palette.indexOf(mod.theme.palette.O!)
     const bg = palette.indexOf(BACKGROUND)
     assert.deepEqual([width, height], [2 * SCALE, SCALE])
     assert.equal(indices.slice(0, SCALE).every(i => i === orange), true)
@@ -31,8 +31,8 @@ describe('柵格化', () => {
   })
   test('符號那一格先填下半像素的顏色，再畫點陣', () => {
     const palette = paletteOf(mod)
-    const { indices, width } = rasterize(frameOf(['G', 'B'], [{ line: 0, col: 0, text: 'z', color: 'cyan' }]), mod.PALETTE, palette)
-    const brown = palette.indexOf(mod.PALETTE.B!)
+    const { indices, width } = rasterize(frameOf(['G', 'B'], [{ line: 0, col: 0, text: 'z', color: 'cyan' }]), mod.theme.palette, palette)
+    const brown = palette.indexOf(mod.theme.palette.B!)
     const cyan = palette.indexOf('#56b6c2')
     assert.equal(indices[0], brown)
     const dots = GLYPHS.z!.join('').split('').filter(c => c === '#').length
@@ -41,13 +41,13 @@ describe('柵格化', () => {
   })
   test('空白不蓋背景', () => {
     const palette = paletteOf(mod)
-    const plain = rasterize(frameOf(['G', 'G']), mod.PALETTE, palette).indices
-    assert.deepEqual(rasterize(frameOf(['G', 'G'], [{ line: 0, col: 0, text: ' ', color: 'cyan' }]), mod.PALETTE, palette).indices, plain)
+    const plain = rasterize(frameOf(['G', 'G']), mod.theme.palette, palette).indices
+    assert.deepEqual(rasterize(frameOf(['G', 'G'], [{ line: 0, col: 0, text: ' ', color: 'cyan' }]), mod.theme.palette, palette).indices, plain)
   })
   test('超出畫面的符號被裁掉', () => {
     const palette = paletteOf(mod)
-    const plain = rasterize(frameOf(['.', '.']), mod.PALETTE, palette).indices
-    assert.deepEqual(rasterize(frameOf(['.', '.'], [{ line: 0, col: 1, text: 'z', color: 'cyan' }]), mod.PALETTE, palette).indices, plain)
+    const plain = rasterize(frameOf(['.', '.']), mod.theme.palette, palette).indices
+    assert.deepEqual(rasterize(frameOf(['.', '.'], [{ line: 0, col: 1, text: 'z', color: 'cyan' }]), mod.theme.palette, palette).indices, plain)
   })
   test('每個符號的點陣都是 4×8', () => {
     assert.equal(Object.values(GLYPHS).every(g => g.length === 8 && g.every(r => r.length === 4)), true)
@@ -71,7 +71,7 @@ describe('三段動畫', () => {
   test('場景用到的像素都在色盤裡', () => {
     const palette = paletteOf(mod)
     for (const clip of clips(mod)) {
-      const { indices } = rasterize(clip.frames[0]!, mod.PALETTE, palette)
+      const { indices } = rasterize(clip.frames[0]!, mod.theme.palette, palette)
       assert.equal(indices.every(i => i >= 0), true, clip.name)
     }
   })

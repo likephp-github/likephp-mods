@@ -6,14 +6,15 @@ import { jumpTo, messageFor } from './jump'
 import type { Run } from './jump'
 import { ago, hotkeys, look, parsePeer, parseSessionsArgs, peerForKey, sortPeers } from './sessions'
 import { paneFrame } from './frame'
-import { stamp } from './scene'
-import { SLEEP, factorFor, joinCells, modeFor, spriteWidth, step, toCells } from './tiger'
+import { factorFor, joinCells, stamp, step, toCells } from './sprite'
+import { DEFAULT_THEME, stateFor, themeFor } from './theme'
 
 const PANE = 'session-radar'
 const TITLE = 'Claude Sessions'
 const POLL_MS = 3000
 const FRAME_MS = 400
-const TIGER_WIDTH = spriteWidth(SLEEP)
+/** 面板底部的主題；目前只有預設主題。 */
+const THEME = themeFor(DEFAULT_THEME)
 
 const peers = atom({ plugin: 'session-radar', key: 'peers' } as const, [])
 const selfId = atom({ plugin: 'session-radar', key: 'selfId' } as const, '')
@@ -58,7 +59,7 @@ async function scan($: EngineInterface, home: string) {
   await update($, checkedAt, () => now)
 }
 
-/** 動畫的一格：工作中往前走一步，睡覺時只推進打呼的節奏。面板沒開就不動。 */
+/** 動畫的一格：工作中往前走一步，其他狀態只推進動作的節奏。面板沒開就不動。 */
 async function tick($: EngineInterface, room: number, stride: number) {
   const isOpen = (await $.ui.panes()).some(pane => pane.id === PANE)
   if (!isOpen) return
@@ -153,13 +154,25 @@ export const register: Register = on => {
     const keys = hotkeys(list, me)
     const cat = await read($, tiger)
     const columns = e.props.bodyColumns
-    const factor = factorFor(cat.percent, columns, TIGER_WIDTH)
-    const mode = modeFor(cat.isWorking, cat.idleSince, await $.clock.now())
+    const factor = factorFor(cat.percent, columns, THEME)
+    const state = stateFor(cat.isWorking, cat.idleSince, await $.clock.now())
     const listRows = 1 + Math.max(1, list.length)
-    const frame = paneFrame({ mode, x: cat.x, facing: cat.facing, frame: cat.frame, factor, columns, rows: e.props.scroll.bodyRows - listRows })
+    const frame = paneFrame({
+      theme: THEME,
+      state,
+      x: cat.x,
+      facing: cat.facing,
+      frame: cat.frame,
+      factor,
+      columns,
+      rows: e.props.scroll.bodyRows - listRows,
+    })
     room = frame.room
     stride = frame.stride
-    const cells = frame.marks.reduce((c, m) => stamp(c, frame.sprite, m.line, m.col, m.text, m.color), toCells(frame.sprite))
+    const cells = frame.marks.reduce(
+      (c, m) => stamp(c, frame.sprite, m.line, m.col, m.text, m.color, THEME.palette),
+      toCells(frame.sprite, THEME.palette),
+    )
     const lines = joinCells(cells)
     // 把場景推到面板最底：可見列數扣掉清單與場景佔的列數，剩下的補空行
     const gap = Math.max(1, e.props.scroll.bodyRows - listRows - lines.length)

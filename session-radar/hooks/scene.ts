@@ -1,6 +1,7 @@
-/** 老虎身後的樹林與腳下的草地：同樣是像素圖，'.' 為透明。 */
-import { PALETTE, spriteWidth } from './tiger'
-import type { Run, Sprite } from './tiger'
+/** 小老虎主題的背景：老虎身後的樹林與腳下的草地，同樣是像素圖，'.' 為透明。 */
+import { spriteWidth } from './sprite'
+import type { Sprite } from './sprite'
+import type { Scene } from './theme'
 
 /** 樹林圖磚：一棵圓樹、一棵松樹與一段空地，橫向無限重複。 */
 export const TREES: Sprite = [
@@ -65,12 +66,6 @@ export const sceneLines = (poseHeight: number, withTrees: boolean): number =>
 export const fitsTrees = (bodyRows: number, listRows: number, poseHeight: number): boolean =>
   listRows + sceneLines(poseHeight, true) <= bodyRows
 
-export type Scene = {
-  sprite: Sprite
-  /** 老虎最上面一列像素在場景裡的列數。 */
-  top: number
-}
-
 /** 背景、老虎、草地合成一張圖。老虎與樹都站在草上。 */
 export const composeScene = (o: { pose: Sprite; x: number; columns: number; withTrees: boolean }): Scene => {
   const height = HEADROOM + bodyHeight(o.pose.length, o.withTrees)
@@ -80,17 +75,3 @@ export const composeScene = (o: { pose: Sprite; x: number; columns: number; with
   const sprite = [...overlay(woods, o.pose, o.x, top), ...strip(GRASS, grassOffset(o.x), o.columns)]
   return { sprite, top }
 }
-
-/** 在第 line 行第 at 欄寫字；底色用該格下半像素的顏色，空白不蓋背景。 */
-export const stamp = (cells: readonly (readonly Run[])[], s: Sprite, line: number, at: number, text: string, color: string): Run[][] =>
-  cells.map((row, l) => {
-    if (l !== line) return [...row]
-    const out = [...row]
-    ;[...text].forEach((ch, i) => {
-      const col = at + i
-      if (ch === ' ' || col < 0 || col >= out.length) return
-      const bg = PALETTE[s[line * 2 + 1]?.[col] ?? '.']
-      out[col] = bg === undefined ? { text: ch, fg: color } : { text: ch, fg: color, bg }
-    })
-    return out
-  })

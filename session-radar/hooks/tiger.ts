@@ -1,6 +1,11 @@
-/** 8-bit 老虎：每個字元是一個像素，'.' 為透明。 */
-export type Sprite = readonly string[]
+/** 小老虎主題（預設）：8-bit 老虎、樹林與草地背景，工作中巡邏、閒置時抓蝴蝶、久了睡覺。 */
+import type { FrameInput, Mark } from './frame'
+import { composeScene, fitsTrees } from './scene'
+import { spriteWidth } from './sprite'
+import type { Sprite } from './sprite'
+import type { Placed, Theme } from './theme'
 
+/** 老虎與樹林草地的顏色。 */
 export const PALETTE: Record<string, string> = {
   O: '#f08a24', // 橘色毛
   K: '#3b2410', // 深色條紋
@@ -126,110 +131,12 @@ export const sleepPose = (frame: number): Sprite => {
   return step === 13 ? twitch(tail) : tail
 }
 
-export const spriteWidth = (s: Sprite): number => s[0]?.length ?? 0
-
-/** 整數倍放大（最近鄰），保持像素風。 */
-export const scale = (s: Sprite, k: number): Sprite =>
-  s.flatMap(row => {
-    const wide = [...row].map(px => px.repeat(k)).join('')
-    return Array.from({ length: k }, () => wide)
-  })
-
-/** 左右翻轉，讓老虎往左走。 */
-export const mirror = (s: Sprite): Sprite => s.map(row => [...row].reverse().join(''))
-
-/** 最近鄰縮放到指定像素寬高，可放大也可縮小。 */
-export const resize = (s: Sprite, width: number, height: number): Sprite => {
-  const srcH = s.length
-  const srcW = spriteWidth(s)
-  return Array.from({ length: height }, (_, y) => {
-    const row = s[Math.min(srcH - 1, Math.floor((y * srcH) / height))] ?? ''
-    return Array.from({ length: width }, (_, x) => row[Math.min(srcW - 1, Math.floor((x * srcW) / width))] ?? '.').join('')
-  })
-}
-
+/** 老虎的最小倍數。 */
 export const MIN_FACTOR = 0.5
-export const MAX_FACTOR = 3
-/** 整體縮小比例：依用量算出的大小再乘上這個值。 */
-export const SIZE_SCALE = 0.5
-
-/**
- * 上下文 100% 時的倍數：面板能容納的整數倍（最多 3 倍）再乘上 SIZE_SCALE。
- * 其他用量依比例縮小，最小 0.5 倍；還沒有用量時用最小值。
- */
-export const factorFor = (percent: number | undefined, columns: number, width: number): number => {
-  const full = Math.max(1, Math.min(MAX_FACTOR, Math.floor(columns / width)))
-  if (percent === undefined) return MIN_FACTOR
-  const ratio = Math.min(100, Math.max(0, percent)) / 100
-  return Math.max(MIN_FACTOR, full * ratio * SIZE_SCALE)
-}
-
-/** 依倍數縮放姿勢，寬高至少 1 像素。 */
-export const sized = (s: Sprite, factor: number): Sprite =>
-  resize(s, Math.max(1, Math.round(spriteWidth(s) * factor)), Math.max(1, Math.round(s.length * factor)))
-
-export type Run = { text: string; fg?: string; bg?: string }
-
-/** 每兩列像素合成一列半格字元（▀ ▄），每格一個 Run。 */
-export const toCells = (s: Sprite): Run[][] => {
-  const lines: Run[][] = []
-  for (let y = 0; y < s.length; y += 2) {
-    const top = s[y] ?? ''
-    const bottom = s[y + 1] ?? ''
-    lines.push(
-      [...top].map((px, x) => {
-        const t = PALETTE[px]
-        const b = PALETTE[bottom[x] ?? '.']
-        if (t === undefined && b === undefined) return { text: ' ' }
-        if (t === undefined) return { text: '▄', fg: b }
-        return b === undefined ? { text: '▀', fg: t } : { text: '▀', fg: t, bg: b }
-      }),
-    )
-  }
-  return lines
-}
-
-/** 相同顏色、相同字元的相鄰格併成一段。 */
-export const joinCells = (lines: readonly (readonly Run[])[]): Run[][] =>
-  lines.map(cells => {
-    const runs: Run[] = []
-    for (const cell of cells) {
-      const last = runs[runs.length - 1]
-      if (last !== undefined && last.fg === cell.fg && last.bg === cell.bg && last.text[0] === cell.text) {
-        last.text += cell.text
-      } else {
-        runs.push({ ...cell })
-      }
-    }
-    return runs
-  })
-
-export const toRuns = (s: Sprite): Run[][] => joinCells(toCells(s))
-
-export type Walker = { x: number; facing: 1 | -1 }
-
-/** 往前走一步，碰到邊界就轉身。 */
-export const step = (w: Walker, room: number, stride: number): Walker => {
-  const max = Math.max(0, room)
-  const next = w.x + w.facing * stride
-  if (next > max) return { x: max, facing: -1 }
-  if (next < 0) return { x: 0, facing: 1 }
-  return { x: next, facing: w.facing }
-}
 
 const ZZZ = ['z', 'z Z', 'z Z z', '']
 
 export const snore = (frame: number): string => ZZZ[Math.floor(frame / 2) % ZZZ.length] ?? ''
-
-export type Mode = 'walk' | 'play' | 'sleep'
-
-/** 閒置多久後才睡覺。 */
-export const NAP_AFTER_MS = 30_000
-
-export const modeFor = (isWorking: boolean, idleSince: number, now: number): Mode => {
-  if (isWorking) return 'walk'
-  return idleSince > 0 && now - idleSince < NAP_AFTER_MS ? 'play' : 'sleep'
-}
 
 /** 前掌在原始圖裡的像素列（第 6 列，從 0 起算第 5 列）。 */
 export const PAW_ROW = 5
@@ -265,3 +172,39 @@ export const flight = (frame: number, pawLine: number): Flight => {
 
 /** 抓蝴蝶時，蝴蝶需要的前方空間（欄）。 */
 export const FLIGHT_ROOM = 8
+
+/** 抓蝴蝶時讓出前方空間給蝴蝶。 */
+const placeForPlay = (o: FrameInput, width: number): number =>
+  o.facing === 1
+    ? Math.max(0, Math.min(o.x, o.columns - width - FLIGHT_ROOM))
+    : Math.min(Math.max(0, o.columns - width), Math.max(o.x, FLIGHT_ROOM))
+
+/** 睡覺時打呼：靠老虎右緣、在頭頂那一行；符號直接蓋在背景上。 */
+const snoreMarks = (o: FrameInput, at: Placed): Mark[] => {
+  const text = snore(o.frame)
+  const col = Math.min(Math.max(0, at.x + at.width - text.length), o.columns - text.length)
+  return [{ line: at.line - 1, col, text, color: 'cyan' }]
+}
+
+/** 抓蝴蝶時蝴蝶在頭頂或掌邊。 */
+const butterflyMarks = (o: FrameInput, at: Placed): Mark[] => {
+  const pawLine = Math.floor((at.top + Math.floor(PAW_ROW * o.factor)) / 2)
+  const fly = flight(o.frame, pawLine - at.line)
+  // 蝴蝶的欄位：老虎面向哪邊，就在那一側的身體前緣外
+  const col = o.facing === 1 ? at.x + at.width + fly.col : at.x - fly.glyph.length - fly.col
+  return [{ line: at.line + fly.row, col, text: fly.glyph, color: fly.isHit ? 'yellow' : 'magenta' }]
+}
+
+export const tiger: Theme = {
+  name: 'tiger',
+  acts: {
+    working: { pose: frame => WALK[frame % WALK.length] ?? SLEEP },
+    resting: { pose: frame => PLAY_STEPS[frame % PLAY_STEPS.length] ?? SLEEP, place: placeForPlay, marks: butterflyMarks },
+    idle: { pose: sleepPose, marks: snoreMarks },
+  },
+  // 老虎疊在樹林前、站在草地上；放不下含樹的場景時只畫草
+  compose: o => composeScene({ pose: o.pose, x: o.x, columns: o.columns, withTrees: fitsTrees(o.rows, 0, o.pose.length) }),
+  palette: PALETTE,
+  width: spriteWidth(SLEEP),
+  minFactor: MIN_FACTOR,
+}
