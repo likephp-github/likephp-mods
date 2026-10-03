@@ -27,6 +27,9 @@ export const displayWidth = (text: string): number => [...text].reduce((sum, ch)
 
 export const ELLIPSIS = '…'
 
+/** 不可放在行首的標點。 */
+const NO_LINE_START = '，。、？！；：」』）…'
+
 /**
  * 以字為單位換行：每行顯示寬度不超過 width，寬字元不會被切成兩半。
  * 超過 maxLines 行時只留前 maxLines 行，最後一行以 … 結尾（必要時再拿掉字讓出位置）。
@@ -38,8 +41,15 @@ export const wrapText = (text: string, width: number, maxLines: number): string[
   let line = ''
   for (const ch of text) {
     if (displayWidth(line + ch) > width) {
+      // 行首禁則：標點不能開頭，把前面的字一起帶到下一行
+      let carry = ch
+      while (NO_LINE_START.includes(carry[0] ?? '') && [...line].length > 1) {
+        carry = [...line].slice(-1).join('') + carry
+        line = [...line].slice(0, -1).join('')
+      }
       lines.push(line)
-      line = ''
+      line = carry
+      continue
     }
     line += ch
   }

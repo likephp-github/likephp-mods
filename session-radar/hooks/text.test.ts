@@ -46,6 +46,15 @@ describe('換行', () => {
     const [line, ...rest] = wrapText(LONGEST, 30, 1)
     expect([line?.endsWith(ELLIPSIS), displayWidth(line ?? ''), rest.length]).toEqual([true, 29, 0])
   })
+  test('標點不放在行首，連同前一個字移到下一行', async () => {
+    const quotes = [
+      '「我們不要灰心，我們也不應該喪志，為什麼？因為我來了。」',
+      '「洋流是溫暖的，可以帶來漁獲，不會燙傷人。」',
+      LONGEST,
+    ]
+    const starts = quotes.flatMap(q => [20, 26, 30, 34].flatMap(w => wrapText(q, w, 3).slice(1).map(l => l[0])))
+    expect(starts.filter(ch => '，。、？！」'.includes(ch ?? ''))).toEqual([])
+  })
   test('寬度放不下一個寬字元時不畫', async () => {
     expect(wrapText(LONGEST, 1, 3)).toEqual([])
   })
