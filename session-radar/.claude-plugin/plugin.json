@@ -1,0 +1,11 @@
+{
+  "name": "session-radar",
+  "version": "0.1.0",
+  "description": "在側邊面板即時列出本機所有 Claude Code session 的狀態",
+  "types": "./types/index.d.ts",
+  "author": {
+    "name": "likephp"
+  },
+  "repository": "https://github.com/likephp-github/likephp-mods",
+  "license": "MIT"
+}

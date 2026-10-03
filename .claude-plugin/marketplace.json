@@ -1,0 +1,17 @@
+{
+  "name": "likephp-mods",
+  "owner": { "name": "likephp" },
+  "metadata": { "description": "likephp 做的 Claude Code mods" },
+  "plugins": [
+    {
+      "name": "token-weather",
+      "source": "./token-weather",
+      "description": "在輸入框上方顯示 context 用量天氣預報、模型、專案分支、用量限制、時長與費用"
+    },
+    {
+      "name": "session-radar",
+      "source": "./session-radar",
+      "description": "側邊面板列出本機所有 Claude Code session 的狀態，附一隻隨 context 長大的 8-bit 老虎"
+    }
+  ]
+}
