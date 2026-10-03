@@ -6,6 +6,8 @@ export type Peer = {
   kind: string
   cwd: string
   since: number
+  /** session 啟動時間（毫秒），用來給穩定的 hotkey 編號；缺少時為 0。 */
+  startedAt: number
 }
 
 export type Tiger = {

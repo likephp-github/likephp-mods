@@ -35,6 +35,7 @@ export const parsePeer = (text: string): Peer | undefined => {
     kind: asString(d.kind, ''),
     cwd: asString(d.cwd, ''),
     since: asNumber(d.statusUpdatedAt, asNumber(d.updatedAt, asNumber(d.startedAt, 0))),
+    startedAt: asNumber(d.startedAt, 0),
   }
 }
 
@@ -44,6 +45,34 @@ export const sortPeers = (peers: readonly Peer[]): Peer[] =>
     const busy = Number(b.status === 'busy') - Number(a.status === 'busy')
     return busy !== 0 ? busy : b.since - a.since
   })
+
+/**
+ * 本視窗以外的 session 依啟動時間由舊到新編號 1～9，當作 hotkey。
+ * 與清單排序無關，session 還在時編號就不變。
+ */
+export const hotkeys = (peers: readonly Peer[], selfId: string): Record<string, string> =>
+  Object.fromEntries(
+    peers
+      .filter(p => p.sessionId !== selfId)
+      .sort((a, b) => a.startedAt - b.startedAt || a.pid - b.pid)
+      .slice(0, 9)
+      .map((p, i) => [p.sessionId, String(i + 1)]),
+  )
+
+/** 依 hotkey 編號找回 session。 */
+export const peerForKey = (peers: readonly Peer[], selfId: string, key: string): Peer | undefined => {
+  const keys = hotkeys(peers, selfId)
+  return peers.find(p => keys[p.sessionId] === key)
+}
+
+export type SessionsCommand = { kind: 'toggle' } | { kind: 'jump'; key: string } | { kind: 'usage' }
+
+/** /sessions 的參數：空的開關面板，1～9 跳到該編號的 session。 */
+export const parseSessionsArgs = (args: string): SessionsCommand => {
+  const a = args.trim()
+  if (a === '') return { kind: 'toggle' }
+  return /^[1-9]$/.test(a) ? { kind: 'jump', key: a } : { kind: 'usage' }
+}
 
 export const ago = (since: number, now: number): string => {
   const s = Math.max(0, Math.round((now - since) / 1000))

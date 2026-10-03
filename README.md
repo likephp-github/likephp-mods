@@ -36,9 +36,15 @@
 ```
 7 個 session · 1 個工作中 · 藍色為本視窗
 ● my-project-f8 工作中 3秒
-○ api-server-d8 閒置 12分
-◆ web-fb shell 2時
+○ 2: api-server-d8 閒置 12分
+◆ 1: web-fb shell 2時
 ```
+
+**跳到其他 session**：輸入 `/sessions 2` 就把面板上編號 2 的 session 所在的終端機分頁帶到最前面；也可以用滑鼠點面板上的 session 名稱（全螢幕版面）。
+
+- 數字依 session 啟動先後編號（最多 9 個），清單重新排序時不會變；本視窗那一行沒有編號
+- 支援 tmux、iTerm2、Terminal.app。session 在 tmux 裡時會先切到它的 pane；那個 tmux session 沒有連線中的 client 時，本視窗在 tmux 裡就直接切過去，否則提示 `tmux attach -t <名稱>`
+- 第一次使用時 macOS 會詢問是否允許控制 iTerm2／Terminal.app；拒絕後可到「系統設定 › 隱私權與安全性 › 自動化」重新允許
 
 面板底部住著一隻 8-bit 老虎，體型隨本 session 的 context 用量變大變小（100% 時為面板容得下最大尺寸的一半，最多 1.5 倍；最小 0.5 倍）。
 
@@ -52,7 +58,7 @@
 
 > 動作圖由 mod 內實際的像素圖與動畫邏輯產生；終端機裡以半格字元繪製，蝴蝶與打呼為文字符號（`ʚɞ`、`z Z`）。
 
-`/sessions`：開關面板（不會自動開啟）。面板在全螢幕版面下會停靠在右側。
+`/sessions`：開關面板（不會自動開啟）；`/sessions 1`～`/sessions 9`：跳到該編號的 session。面板在全螢幕版面下會停靠在右側。
 
 ## 安全性
 
@@ -62,6 +68,8 @@ Mods 不在沙盒裡執行，安裝前請先閱讀原始碼。這兩個 mod 只�
 - session-radar：`~/.claude/sessions/*.json`（不讀取同目錄的 `.key` 檔）
 
 都不會連網、不會寫入任何檔案。
+
+session-radar 只有在你按下某個 session 時，才會執行 `ps`（查它的 tty）、`tmux`（找 pane、切換）與 `osascript`（選取 iTerm2／Terminal.app 的分頁）；不會啟動沒在執行的終端機 app。
 
 ## 開發
 
