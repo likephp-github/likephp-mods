@@ -56,7 +56,7 @@
 | **抓蝴蝶**<br>回覆結束後 30 秒內 | ![老虎抓蝴蝶](docs/images/tiger-play.gif)<br>甩尾、壓低身體、跳起來拍掌邊的蝴蝶 |
 | **睡覺**<br>閒置 30 秒後 | ![老虎睡覺](docs/images/tiger-sleep.gif)<br>呼吸起伏、抖尾巴、抖耳朵、打呼 |
 
-> 動作圖由 mod 內實際的像素圖與動畫邏輯產生；終端機裡以半格字元繪製，蝴蝶與打呼為文字符號（`ʚɞ`、`z Z`）。
+> 動作圖由 `scripts/gen-gifs.ts` 以 mod 內實際的像素圖與動畫邏輯產生；終端機裡以半格字元繪製，蝴蝶與打呼為文字符號（`ʚɞ`、`z Z`）。
 
 `/sessions`：開關面板（不會自動開啟）；`/sessions 1`～`/sessions 9`：跳到該編號的 session。面板在全螢幕版面下會停靠在右側。
 
@@ -76,6 +76,13 @@ session-radar 只有在你按下某個 session 時，才會執行 `ps`（查它�
 ```
 claude plugin validate ./token-weather
 claude plugin test ./token-weather
+```
+
+session-radar 的動作圖（`docs/images/tiger-*.gif`）由腳本產生，每一格都用面板同一套動畫邏輯算出；改了老虎或背景後重新產生：
+
+```
+node scripts/gen-gifs.ts            # 重新產生三張 GIF（需要 Node 24，不需安裝套件）
+node --test 'scripts/*.test.ts'     # 腳本的測試
 ```
 
 ## License

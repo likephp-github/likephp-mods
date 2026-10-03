@@ -5,8 +5,9 @@ import type { Peer, Tiger } from '../types'
 import { jumpTo, messageFor } from './jump'
 import type { Run } from './jump'
 import { ago, hotkeys, look, parsePeer, parseSessionsArgs, peerForKey, sortPeers } from './sessions'
-import { composeScene, fitsTrees, stamp } from './scene'
-import { FLIGHT_ROOM, PAW_ROW, PLAY_STEPS, SLEEP, WALK, sleepPose, factorFor, flight, joinCells, mirror, modeFor, sized, snore, spriteWidth, step, toCells } from './tiger'
+import { paneFrame } from './frame'
+import { stamp } from './scene'
+import { SLEEP, factorFor, joinCells, modeFor, spriteWidth, step, toCells } from './tiger'
 
 const PANE = 'session-radar'
 const TITLE = 'Claude Sessions'
@@ -154,37 +155,11 @@ export const register: Register = on => {
     const columns = e.props.bodyColumns
     const factor = factorFor(cat.percent, columns, TIGER_WIDTH)
     const mode = modeFor(cat.isWorking, cat.idleSince, await $.clock.now())
-    const base =
-      mode === 'walk' ? WALK[cat.frame % WALK.length] : mode === 'play' ? PLAY_STEPS[cat.frame % PLAY_STEPS.length] : sleepPose(cat.frame)
-    const pose = sized(base ?? SLEEP, factor)
-    const width = spriteWidth(pose)
-    room = Math.max(0, columns - width)
-    stride = Math.max(1, Math.round(factor))
-    // 抓蝴蝶時讓出前方空間給蝴蝶
-    const x =
-      mode !== 'play'
-        ? Math.min(cat.x, room)
-        : cat.facing === 1
-          ? Math.max(0, Math.min(cat.x, columns - width - FLIGHT_ROOM))
-          : Math.min(room, Math.max(cat.x, FLIGHT_ROOM))
-    // 老虎疊在樹林前、站在草地上；背景位移跟著老虎實際畫出的 x
     const listRows = 1 + Math.max(1, list.length)
-    const withTrees = fitsTrees(e.props.scroll.bodyRows, listRows, pose.length)
-    const scene = composeScene({ pose: cat.facing === 1 ? pose : mirror(pose), x, columns, withTrees })
-    const tigerLine = Math.floor(scene.top / 2)
-    const pawLine = Math.floor((scene.top + Math.floor(PAW_ROW * factor)) / 2)
-    const fly = flight(cat.frame, pawLine - tigerLine)
-    // 蝴蝶的欄位：老虎面向哪邊，就在那一側的身體前緣外
-    const flyAt = cat.facing === 1 ? x + width + fly.col : x - fly.glyph.length - fly.col
-    const zzz = snore(cat.frame)
-    const zzzAt = Math.min(Math.max(0, x + width - zzz.length), columns - zzz.length)
-    // 頭頂那一行：睡覺時打呼，抓蝴蝶時蝴蝶在頭頂或掌邊，符號直接蓋在背景上
-    const cells =
-      mode === 'sleep'
-        ? stamp(toCells(scene.sprite), scene.sprite, tigerLine - 1, zzzAt, zzz, 'cyan')
-        : mode === 'play'
-          ? stamp(toCells(scene.sprite), scene.sprite, tigerLine + fly.row, flyAt, fly.glyph, fly.isHit ? 'yellow' : 'magenta')
-          : toCells(scene.sprite)
+    const frame = paneFrame({ mode, x: cat.x, facing: cat.facing, frame: cat.frame, factor, columns, rows: e.props.scroll.bodyRows - listRows })
+    room = frame.room
+    stride = frame.stride
+    const cells = frame.marks.reduce((c, m) => stamp(c, frame.sprite, m.line, m.col, m.text, m.color), toCells(frame.sprite))
     const lines = joinCells(cells)
     // 把場景推到面板最底：可見列數扣掉清單與場景佔的列數，剩下的補空行
     const gap = Math.max(1, e.props.scroll.bodyRows - listRows - lines.length)
