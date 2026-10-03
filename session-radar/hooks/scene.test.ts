@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { GRASS, TREES, TREE_HEIGHT, composeScene, fitsTrees, grassOffset, overlay, sceneLines, stamp, strip, treeOffset } from './scene'
-import { PALETTE, SLEEP, WALK, sized, spriteWidth, toCells } from './tiger'
+import { GRASS, TREES, TREE_HEIGHT, composeScene, fitsTrees, grassOffset, overlay, sceneLines, strip, treeOffset } from './scene'
+import { sized, spriteWidth, stamp, toCells } from './sprite'
+import { PALETTE, SLEEP, WALK } from './tiger'
 
 const isTree = (px: string) => px === 'G' || px === 'L' || px === 'B'
 
@@ -102,19 +103,19 @@ describe('矮面板', () => {
 describe('文字符號', () => {
   test('底色是該格下半像素的背景色', async () => {
     const s = ['G.', 'B.']
-    const [line] = stamp(toCells(s), s, 0, 0, 'z', 'cyan')
+    const [line] = stamp(toCells(s, PALETTE), s, 0, 0, 'z', 'cyan', PALETTE)
     expect(line?.[0]).toEqual({ text: 'z', fg: 'cyan', bg: PALETTE.B })
   })
   test('下半像素透明就不設底色', async () => {
     const s = ['..', '..']
-    expect(stamp(toCells(s), s, 0, 1, 'z', 'cyan')[0]?.[1]).toEqual({ text: 'z', fg: 'cyan' })
+    expect(stamp(toCells(s, PALETTE), s, 0, 1, 'z', 'cyan', PALETTE)[0]?.[1]).toEqual({ text: 'z', fg: 'cyan' })
   })
   test('空白不蓋掉背景', async () => {
     const s = ['GGG', 'GGG']
-    expect(stamp(toCells(s), s, 0, 0, 'z Z', 'cyan')[0]?.[1]).toEqual(toCells(s)[0]?.[1])
+    expect(stamp(toCells(s, PALETTE), s, 0, 0, 'z Z', 'cyan', PALETTE)[0]?.[1]).toEqual(toCells(s, PALETTE)[0]?.[1])
   })
   test('超出畫面的字被裁掉', async () => {
     const s = ['..', '..']
-    expect(stamp(toCells(s), s, 0, 1, 'ʚɞ', 'magenta')[0]?.length).toBe(2)
+    expect(stamp(toCells(s, PALETTE), s, 0, 1, 'ʚɞ', 'magenta', PALETTE)[0]?.length).toBe(2)
   })
 })

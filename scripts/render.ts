@@ -5,6 +5,7 @@
 import { registerHooks } from 'node:module'
 
 import type { Frame, FrameInput } from '../session-radar/hooks/frame'
+import type { Theme } from '../session-radar/hooks/theme'
 
 /** 每個像素畫成幾 px 見方。 */
 export const SCALE = 8
@@ -33,7 +34,8 @@ export const GLYPHS: Record<string, readonly string[]> = {
 export type Mod = {
   paneFrame: (o: FrameInput) => Frame
   step: (w: { x: number; facing: 1 | -1 }, room: number, stride: number) => { x: number; facing: 1 | -1 }
-  PALETTE: Record<string, string>
+  /** 要畫的主題。 */
+  theme: Theme
 }
 
 /**
@@ -52,12 +54,13 @@ export const loadMod = async (): Promise<Mod> => {
     },
   })
   const frame = await import('../session-radar/hooks/frame.ts')
-  const tiger = await import('../session-radar/hooks/tiger.ts')
-  return { paneFrame: frame.paneFrame, step: tiger.step, PALETTE: tiger.PALETTE }
+  const sprite = await import('../session-radar/hooks/sprite.ts')
+  const theme = await import('../session-radar/hooks/theme.ts')
+  return { paneFrame: frame.paneFrame, step: sprite.step, theme: theme.themeFor('tiger') }
 }
 
-/** 色盤：背景、mod 的像素顏色、符號顏色。 */
-export const paletteOf = (mod: Mod): string[] => [BACKGROUND, ...new Set(Object.values(mod.PALETTE)), ...Object.values(MARK_COLORS)]
+/** 色盤：背景、主題的像素顏色、符號顏色。 */
+export const paletteOf = (mod: Mod): string[] => [BACKGROUND, ...new Set(Object.values(mod.theme.palette)), ...Object.values(MARK_COLORS)]
 
 export type Raster = { width: number; height: number; indices: number[] }
 
@@ -94,40 +97,40 @@ export const rasterize = (frame: Frame, pixels: Record<string, string>, palette:
 }
 
 export type Clip = {
+  /** 老虎的動作名稱，也是 GIF 檔名：walk（working）、play（resting）、sleep（idle）。 */
   name: 'walk' | 'play' | 'sleep'
   frames: Frame[]
   /** 最後一格之後的那一格；等於第一格才算無縫循環。 */
   after: Frame
 }
 
-const BASE = { factor: 1, columns: COLUMNS, rows: Number.POSITIVE_INFINITY }
-
 /** 三段動畫：巡邏照實際速度來回一圈，抓蝴蝶與睡覺各播到動作完整循環。 */
 export const clips = (mod: Mod): Clip[] => {
+  const base = { theme: mod.theme, factor: 1, columns: COLUMNS, rows: Number.POSITIVE_INFINITY }
   // 巡邏：從左邊往右走，走到邊界轉身、走回原點，格數湊成偶數讓腳步也對上
   const walk: FrameInput[] = []
   let w: { x: number; facing: 1 | -1 } = { x: 0, facing: 1 }
   do {
-    const input: FrameInput = { ...BASE, mode: 'walk', x: w.x, facing: w.facing, frame: walk.length }
+    const input: FrameInput = { ...base, state: 'working', x: w.x, facing: w.facing, frame: walk.length }
     walk.push(input)
     const f = mod.paneFrame(input)
     w = mod.step(w, f.room, f.stride)
   } while (w.x !== 0 || w.facing !== 1 || walk.length % 2 !== 0)
 
-  const loop = (mode: 'play' | 'sleep', x: number, count: number): FrameInput[] =>
-    Array.from({ length: count }, (_, frame) => ({ ...BASE, mode, x, facing: 1, frame }))
+  const loop = (state: 'resting' | 'idle', x: number, count: number): FrameInput[] =>
+    Array.from({ length: count }, (_, frame) => ({ ...base, state, x, facing: 1, frame }))
 
   const make = (name: Clip['name'], inputs: FrameInput[], after: FrameInput): Clip => ({
     name,
     frames: inputs.map(mod.paneFrame),
     after: mod.paneFrame(after),
   })
-  const play = loop('play', 4, 8)
+  const play = loop('resting', 4, 8)
   // 睡覺時老虎在正中間
-  const middle = Math.floor(mod.paneFrame({ ...BASE, mode: 'sleep', x: 0, facing: 1, frame: 0 }).room / 2)
-  const sleep = loop('sleep', middle, 48)
+  const middle = Math.floor(mod.paneFrame({ ...base, state: 'idle', x: 0, facing: 1, frame: 0 }).room / 2)
+  const sleep = loop('idle', middle, 48)
   return [
-    make('walk', walk, { ...BASE, mode: 'walk', x: w.x, facing: w.facing, frame: walk.length }),
+    make('walk', walk, { ...base, state: 'working', x: w.x, facing: w.facing, frame: walk.length }),
     make('play', play, { ...play[0]!, frame: play.length }),
     make('sleep', sleep, { ...sleep[0]!, frame: sleep.length }),
   ]

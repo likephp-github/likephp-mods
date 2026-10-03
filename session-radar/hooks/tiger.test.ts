@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { NAP_AFTER_MS, PLAY, PLAY_STEPS, SLEEP, SLEEP_CYCLE, sleepPose, WALK, factorFor, flight, modeFor, mirror, resize, scale, sized, snore, spriteWidth, step, toRuns } from './tiger'
+import { factorFor, mirror, resize, scale, sized, spriteWidth, step, toRuns } from './sprite'
+import { MIN_FACTOR, PALETTE, PLAY, PLAY_STEPS, SLEEP, SLEEP_CYCLE, sleepPose, WALK, flight, snore, tiger } from './tiger'
 
 describe('像素圖', () => {
   test('每個姿勢每列寬度一致', async () => {
@@ -15,28 +16,28 @@ describe('像素圖', () => {
     expect(mirror(['OK.'])).toEqual(['.KO'])
   })
   test('兩列像素合成一列半格字元', async () => {
-    expect(toRuns(SLEEP).length).toBe(SLEEP.length / 2)
+    expect(toRuns(SLEEP, PALETTE).length).toBe(SLEEP.length / 2)
   })
   test('上方透明下方有色用 ▄', async () => {
-    expect(toRuns(['.', 'O'])[0]?.[0]?.text).toBe('▄')
+    expect(toRuns(['.', 'O'], PALETTE)[0]?.[0]?.text).toBe('▄')
   })
 })
 
 describe('體型', () => {
   test('上下文 100% 時是面板容得下的最大整數倍的一半', async () => {
-    expect(factorFor(100, 40, 18)).toBe(1)
+    expect(factorFor(100, 40, tiger)).toBe(1)
   })
   test('最大不超過 1.5 倍', async () => {
-    expect(factorFor(100, 200, 18)).toBe(1.5)
+    expect(factorFor(100, 200, tiger)).toBe(1.5)
   })
   test('50% 是 100% 的一半', async () => {
-    expect(factorFor(50, 200, 18)).toBe(0.75)
+    expect(factorFor(50, 200, tiger)).toBe(0.75)
   })
   test('用量很低時不小於 0.5 倍', async () => {
-    expect(factorFor(5, 40, 18)).toBe(0.5)
+    expect(factorFor(5, 40, tiger)).toBe(0.5)
   })
   test('還沒有用量時是最小值', async () => {
-    expect(factorFor(undefined, 40, 18)).toBe(0.5)
+    expect(factorFor(undefined, 40, tiger)).toBe(0.5)
   })
   test('縮成一半寬高都減半', async () => {
     const small = sized(WALK[0] ?? [], 0.5)
@@ -62,19 +63,7 @@ describe('動作', () => {
   })
 })
 
-describe('閒置', () => {
-  test('工作中會走路', async () => {
-    expect(modeFor(true, 0, 1000)).toBe('walk')
-  })
-  test('剛閒置時抓蝴蝶', async () => {
-    expect(modeFor(false, 1000, 1000 + 5_000)).toBe('play')
-  })
-  test('閒置滿 30 秒就睡覺', async () => {
-    expect(modeFor(false, 1000, 1000 + NAP_AFTER_MS)).toBe('sleep')
-  })
-  test('從沒工作過直接睡', async () => {
-    expect(modeFor(false, 0, 5_000)).toBe('sleep')
-  })
+describe('抓蝴蝶', () => {
   test('蝴蝶從頭頂出發', async () => {
     expect(flight(0, 2).row).toBe(-1)
   })
@@ -113,6 +102,23 @@ describe('睡覺', () => {
   })
   test('耳朵會抖', async () => {
     expect(sleepPose(13)[0]).not.toBe(sleepPose(12)[0])
+  })
+})
+
+describe('主題', () => {
+  test('原始寬度是老虎的寬度', async () => {
+    expect(tiger.width).toBe(spriteWidth(SLEEP))
+  })
+  test('最小倍數 0.5', async () => {
+    expect(tiger.minFactor).toBe(MIN_FACTOR)
+  })
+  test('各狀態的姿勢', async () => {
+    const poses = [tiger.acts.working.pose(1), tiger.acts.resting.pose(4), tiger.acts.idle.pose(13)]
+    expect(poses).toEqual([WALK[1], PLAY_STEPS[4], sleepPose(13)])
+  })
+  test('老虎用到的像素都有顏色', async () => {
+    const pixels = [...WALK, ...PLAY_STEPS, SLEEP].flat().join('').replaceAll('.', '')
+    expect([...pixels].every(px => tiger.palette[px] !== undefined)).toBe(true)
   })
 })
 

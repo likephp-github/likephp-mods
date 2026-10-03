@@ -15,7 +15,7 @@ const mod = await loadMod()
 const palette = paletteOf(mod)
 
 for (const clip of clips(mod)) {
-  const rasters = clip.frames.map(f => rasterize(f, mod.PALETTE, palette))
+  const rasters = clip.frames.map(f => rasterize(f, mod.theme.palette, palette))
   const { width, height } = rasters[0]!
   const gif = encodeGif({ width, height, palette, frames: rasters.map(r => ({ indices: r.indices, delayMs: FRAME_MS })) })
   const path = fileURLToPath(import.meta.resolve(`../docs/images/tiger-${clip.name}.gif`))
