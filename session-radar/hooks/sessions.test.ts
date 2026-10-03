@@ -84,6 +84,23 @@ describe('/sessions 參數', () => {
   test('其他內容顯示用法', async () => {
     for (const args of ['0', '10', 'abc']) expect(parseSessionsArgs(args)).toEqual({ kind: 'usage' })
   })
+  test('theme 不帶名稱就輪流', async () => {
+    expect(parseSessionsArgs('theme')).toEqual({ kind: 'theme' })
+  })
+  test('theme 帶名稱就指定', async () => {
+    expect(parseSessionsArgs('theme tiger')).toEqual({ kind: 'theme', name: 'tiger' })
+    expect(parseSessionsArgs('theme puma')).toEqual({ kind: 'theme', name: 'puma' })
+  })
+  test('theme 的名稱不在這裡檢查', async () => {
+    expect(parseSessionsArgs('theme xyz')).toEqual({ kind: 'theme', name: 'xyz' })
+  })
+  test('theme 前後與中間多餘的空白不影響', async () => {
+    expect(parseSessionsArgs('  theme  ')).toEqual({ kind: 'theme' })
+    expect(parseSessionsArgs(' theme   puma ')).toEqual({ kind: 'theme', name: 'puma' })
+  })
+  test('theme 後面超過一個字顯示用法', async () => {
+    for (const args of ['theme a b', 'themes', 'theme1']) expect(parseSessionsArgs(args)).toEqual({ kind: 'usage' })
+  })
   test('依編號找回 session', async () => {
     const list = [peer('busy', 30), peer('idle', 10), peer('idle', 20)]
     expect(peerForKey(list, 's10', '2')?.sessionId).toBe('s30')
