@@ -1,6 +1,6 @@
 {
   "name": "session-radar",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "在側邊面板即時列出本機所有 Claude Code session 的狀態",
   "types": "./types/index.d.ts",
   "author": {
