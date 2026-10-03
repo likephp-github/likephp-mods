@@ -82,6 +82,7 @@ session-radar 的動作圖（`docs/images/tiger-*.gif`）由腳本產生，每�
 
 ```
 node scripts/gen-gifs.ts            # 重新產生三張 GIF（需要 Node 24，不需安裝套件）
+node scripts/gen-puma.ts            # 從原圖重新產生綠雲與愛心的走路圖與預覽圖（docs/images/puma-preview.png）
 node --test 'scripts/*.test.ts'     # 腳本的測試
 ```
 
